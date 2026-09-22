@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Voci Trainer</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { margin: 0; padding: 16px; background: #f2f2f7; color: #1c1c1e; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    .container { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 12px; }
+    
+    .stats { font-size: 13px; color: #8e8e93; display: flex; justify-content: space-between; padding: 0 4px; }
+    .progress-bar { background: #e5e5ea; border-radius: 8px; height: 8px; overflow: hidden; }
+    .progress-fill { background: #34c759; height: 100%; width: 0%; transition: width 0.3s; }
+    
+    .card { background: #fff; border-radius: 16px; padding: 24px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; }
+    .flashcard { min-height: 230px; display: flex; flex-direction: column; justify-content: center; cursor: pointer; user-select: none; }
+    
+    .term { font-size: 26px; font-weight: 700; margin-bottom: 12px; word-break: break-word; line-height: 1.25; }
+    .definition { font-size: 21px; color: #007aff; word-break: break-word; line-height: 1.3; }
+    .hint { font-size: 13px; color: #c7c7cc; margin-top: 16px; }
+    
+    .badge { align-self: center; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; margin-bottom: 12px; }
+    .badge-0 { background: #ffe5e5; color: #ff3b30; }
+    .badge-1 { background: #e8f8ed; color: #34c759; }
+
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btn-main { border: none; border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+    .btn-main:active { opacity: 0.7; }
+    .btn-wrong { background: #ff3b30; color: #fff; }
+    .btn-right { background: #34c759; color: #fff; }
+
+    .tools-card { background: #fff; border-radius: 14px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .toolbar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .btn-sub { border: none; border-radius: 8px; padding: 10px; font-size: 13px; font-weight: 600; background: #f2f2f7; color: #48484a; cursor: pointer; }
+    .btn-sub:active { background: #e5e5ea; }
+    .btn-sub.active { background: #ff9500; color: #fff; }
+
+    .completion-box { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+    .btn-act { border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .btn-act-archive { background: #34c759; color: #fff; }
+    .btn-act-restart { background: #ff9500; color: #fff; }
+
+    textarea { width: 100%; height: 160px; border-radius: 10px; border: 1px solid #d1d1d6; padding: 10px; font-size: 13px; font-family: monospace; resize: none; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="stats">
+    <span id="activeCount">Im Fokus: 0</span>
+    <span id="queueCount">Wartend: 0</span>
+    <span id="archiveCount">Im Archiv: 0</span>
+  </div>
+  
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressBar"></div>
+  </div>
+
+  <!-- Karte -->
+  <div class="card flashcard" id="cardArea" onclick="toggleAnswer()">
+    <div class="badge badge-0" id="scoreBadge" style="display: none;">0/2</div>
+    <div class="term" id="termText">Keine Wörter geladen</div>
+    <div class="definition" id="defText" style="display: none;"></div>
+    <div class="hint" id="cardHint">Antippen zum Umdrehen</div>
+  </div>
+
+  <!-- Set-Abschluss -->
+  <div class="card" id="completionCard" style="display: none;">
+    <h3 style="margin: 0 0 6px 0; font-size: 20px;">Set komplett gelernt!</h3>
+    <p style="font-size: 13px; color: #8e8e93; margin: 0 0 16px 0;">Alle Wörter 2x sicher gewusst.</p>
+    <div class="completion-box">
+      <button class="btn-act btn-act-archive" onclick="finishToArchive()">Ins Archiv verschieben & Fertig</button>
+      <button class="btn-act btn-act-restart" onclick="restartCurrentSet()">Gleiches Set zurücksetzen & neu starten</button>
+    </div>
+  </div>
+
+  <!-- Buttons: 2x können -->
+  <div class="btn-row" id="actionButtons" style="display: none;">
+    <button class="btn-main btn-wrong" onclick="answer(false)">Noch nicht</button>
+    <button class="btn-main btn-right" onclick="answer(true)">Gewusst (2x)</button>
+  </div>
+
+  <!-- Werkzeug-Leiste -->
+  <div class="tools-card">
+    <div class="toolbar-grid">
+      <button class="btn-sub" id="repeatBtn" onclick="toggleRepeatMode()">Alte repetieren</button>
+      <button class="btn-sub" onclick="openExportImport()">Export / Import</button>
+      <button class="btn-sub" style="grid-column: span 2;" onclick="toggleArea('setupArea')">+ Neue Voci eingeben</button>
+    </div>
+
+    <!-- Export & Import Bereich -->
+    <div id="exportArea" style="display: none; margin-top: 12px;">
+      <p style="font-size: 11px; color: #8e8e93; margin: 0 0 6px 0;">Am Handy: Kamera auf Text halten -> Live-Text-Symbol tippen -> Kopieren.</p>
+      <textarea id="exportText" placeholder="Exportierte Daten oder Text zum Importieren..."></textarea>
+      <div class="toolbar-grid">
+        <button class="btn-sub" style="background:#34c759; color:#fff;" onclick="importFromText()">Stand laden</button>
+        <button class="btn-sub" onclick="toggleArea('exportArea')">Schliessen</button>
+      </div>
+    </div>
+
+    <!-- Neue Wörter einfügen -->
+    <div id="setupArea" style="display: none; margin-top: 12px;">
+      <textarea id="vocabInput" placeholder="Format: Begriff = Übersetzung&#10;Oder aus Quizlet per Tab getrennt"></textarea>
+      <button class="btn-sub" style="width: 100%; background:#34c759; color:#fff;" onclick="addVocab()">Hinzufügen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let queue = [];
+  let active = [];
+  let finishedSet = [];
+  let archive = [];
+  
+  let repeatMode = false;
+  let repeatActive = [];
+
+  let currentIndex = 0;
+  let showingAnswer = false;
+  const POOL_SIZE = 5;
+
+  function init() {
+    loadLocal();
+    fillActivePool();
+    updateUI();
+  }
+
+  function loadLocal() {
+    const saved = localStorage.getItem('voci_local_data');
+    if (saved) {
+      const data = JSON.parse(saved);
+      queue = data.queue || [];
+      active = data.active || [];
+      finishedSet = data.finishedSet || [];
+      archive = data.archive || [];
+    }
+  }
+
+  function saveState() {
+    localStorage.setItem('voci_local_data', JSON.stringify({ queue, active, finishedSet, archive }));
+  }
+
+  function fillActivePool() {
+    if (repeatMode) {
+      while (repeatActive.length < POOL_SIZE && archive.length > 0) {
+        repeatActive.push(archive.shift());
+      }
+    } else {
+      while (active.length < POOL_SIZE && queue.length > 0) {
+        const item = queue.shift();
+        item.score = item.score || 0;
+        active.push(item);
+      }
+    }
+  }
+
+  function toggleRepeatMode() {
+    repeatMode = !repeatMode;
+    currentIndex = 0;
+    resetCardUI();
+
+    const repeatBtn = document.getElementById('repeatBtn');
+
+    if (repeatMode) {
+      repeatBtn.classList.add('active');
+      repeatBtn.textContent = 'Lernen fortsetzen';
+      repeatActive = [];
+      fillActivePool();
+    } else {
+      repeatBtn.classList.remove('active');
+      repeatBtn.textContent = 'Alte repetieren';
+      while (repeatActive.length > 0) {
+        archive.push(repeatActive.shift());
+      }
+      fillActivePool();
+    }
+    saveState();
+    updateUI();
+  }
+
+  function toggleAnswer() {
+    const list = repeatMode ? repeatActive : active;
+    if (list.length === 0) return;
+
+    showingAnswer = !showingAnswer;
+    document.getElementById('defText').style.display = showingAnswer ? 'block' : 'none';
+    document.getElementById('cardHint').textContent = showingAnswer ? 'Ergebnis:' : 'Antippen zum Umdrehen';
+    document.getElementById('actionButtons').style.display = showingAnswer ? 'grid' : 'none';
+  }
+
+  function answer(correct) {
+    const list = repeatMode ? repeatActive : active;
+    if (list.length === 0) return;
+    const card = list[currentIndex];
+
+    if (repeatMode) {
+      if (correct) {
+        archive.push(list.splice(currentIndex, 1)[0]);
+        fillActivePool();
+      } else {
+        currentIndex = (currentIndex + 1) % list.length;
+      }
+    } else {
+      if (correct) {
+        card.score = (card.score || 0) + 1;
+        if (card.score >= 2) {
+          finishedSet.push(list.splice(currentIndex, 1)[0]);
+          fillActivePool();
+        } else {
+          currentIndex = (currentIndex + 1) % list.length;
+        }
+      } else {
+        card.score = 0;
+        currentIndex = (currentIndex + 1) % list.length;
+      }
+    }
+
+    resetCardUI();
+    saveState();
+    updateUI();
+  }
+
+  function finishToArchive() {
+    while (finishedSet.length > 0) {
+      archive.push(finishedSet.shift());
+    }
+    saveState();
+    updateUI();
+  }
+
+  function restartCurrentSet() {
+    while (finishedSet.length > 0) {
+      const card = finishedSet.shift();
+      card.score = 0;
+      queue.push(card);
+    }
+    fillActivePool();
+    saveState();
+    updateUI();
+  }
+
+  function resetCardUI() {
+    showingAnswer = false;
+    document.getElementById('defText').style.display = 'none';
+    document.getElementById('actionButtons').style.display = 'none';
+    document.getElementById('cardHint').textContent = 'Antippen zum Umdrehen';
+  }
+
+  function updateUI() {
+    const cardArea = document.getElementById('cardArea');
+    const completionCard = document.getElementById('completionCard');
+    const badge = document.getElementById('scoreBadge');
+
+    if (!repeatMode && active.length === 0 && queue.length === 0 && finishedSet.length > 0) {
+      cardArea.style.display = 'none';
+      completionCard.style.display = 'block';
+      document.getElementById('actionButtons').style.display = 'none';
+    } else {
+      completionCard.style.display = 'none';
+      cardArea.style.display = 'flex';
+    }
+
+    const currentPool = repeatMode ? repeatActive : active;
+    const totalCurrent = queue.length + active.length + finishedSet.length;
+
+    document.getElementById('activeCount').textContent = `Im Fokus: ${currentPool.length}`;
+    document.getElementById('queueCount').textContent = `Wartend: ${repeatMode ? archive.length : queue.length}`;
+    document.getElementById('archiveCount').textContent = `Im Archiv: ${archive.length + (repeatMode ? repeatActive.length : 0)}`;
+
+    const progress = totalCurrent === 0 ? 0 : Math.round((finishedSet.length / totalCurrent) * 100);
+    document.getElementById('progressBar').style.width = `${progress}%`;
+
+    if (currentPool.length > 0) {
+      currentIndex = currentIndex % currentPool.length;
+      const card = currentPool[currentIndex];
+      document.getElementById('termText').textContent = card.t;
+      document.getElementById('defText').textContent = card.d;
+
+      badge.style.display = 'inline-block';
+      if (repeatMode) {
+        badge.className = 'badge badge-1';
+        badge.textContent = 'Repetition';
+      } else {
+        badge.className = 'badge badge-' + (card.score || 0);
+        badge.textContent = card.score === 1 ? '1 von 2' : '0 von 2';
+      }
+    } else if (cardArea.style.display !== 'none') {
+      badge.style.display = 'none';
+      document.getElementById('termText').textContent = repeatMode ? 'Repetition beendet!' : 'Keine Wörter geladen';
+      document.getElementById('defText').textContent = '';
+      document.getElementById('cardHint').textContent = '';
+      document.getElementById('actionButtons').style.display = 'none';
+    }
+  }
+
+  function toggleArea(id) {
+    const el = document.getElementById(id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function openExportImport() {
+    generateExportText();
+    document.getElementById('exportArea').style.display = 'block';
+  }
+
+  function addVocab() {
+    const text = document.getElementById('vocabInput').value;
+    const lines = text.split('\n');
+    let count = 0;
+
+    lines.forEach(line => {
+      let sep = line.includes('\t') ? '\t' : '=';
+      const parts = line.split(sep);
+      if (parts.length >= 2 && parts[0].trim() && parts[1].trim()) {
+        queue.push({ t: parts[0].trim(), d: parts[1].trim(), score: 0 });
+        count++;
+      }
+    });
+
+    if (count > 0) {
+      fillActivePool();
+      saveState();
+      document.getElementById('vocabInput').value = '';
+      toggleArea('setupArea');
+      updateUI();
+    }
+  }
+
+  function generateExportText() {
+    let out = `=== NOCH AM LERNEN ===\n`;
+    active.forEach(i => { out += `${i.t} = ${i.d} [Score: ${i.score || 0}]\n`; });
+
+    out += `\n=== KANN ICH (FERTIGES SET) ===\n`;
+    finishedSet.forEach(i => { out += `${i.t} = ${i.d}\n`; });
+
+    out += `\n=== KANN ICH (ARCHIV) ===\n`;
+    archive.forEach(i => { out += `${i.t} = ${i.d}\n`; });
+
+    out += `\n=== NICHT ANGESCHAUT ===\n`;
+    queue.forEach(i => { out += `${i.t} = ${i.d}\n`; });
+
+    document.getElementById('exportText').value = out;
+  }
+
+  function importFromText() {
+    const raw = document.getElementById('exportText').value;
+    const lines = raw.split('\n');
+
+    let currentCategory = 'N';
+    const newActive = [];
+    const newQueue = [];
+    const newFinished = [];
+    const newArchive = [];
+
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+
+      if (trimmed.includes('=== NOCH AM LERNEN ===')) { currentCategory = 'L'; return; }
+      if (trimmed.includes('=== KANN ICH (FERTIGES SET) ===')) { currentCategory = 'F'; return; }
+      if (trimmed.includes('=== KANN ICH (ARCHIV) ===') || trimmed.includes('=== KANN ICH ===')) { currentCategory = 'A'; return; }
+      if (trimmed.includes('=== NICHT ANGESCHAUT ===')) { currentCategory = 'N'; return; }
+
+      let score = 0;
+      let cleanLine = trimmed;
+      const scoreMatch = trimmed.match(/\[Score:\s*(\d+)\]/);
+      if (scoreMatch) {
+        score = parseInt(scoreMatch[1], 10);
+        cleanLine = trimmed.replace(/\[Score:\s*\d+\]/, '').trim();
+      }
+
+      let sep = cleanLine.includes('\t') ? '\t' : '=';
+      const parts = cleanLine.split(sep);
+      if (parts.length >= 2 && parts[0].trim() && parts[1].trim()) {
+        const item = { t: parts[0].trim(), d: parts[1].trim(), score: score };
+        if (currentCategory === 'L') newActive.push(item);
+        else if (currentCategory === 'F') newFinished.push(item);
+        else if (currentCategory === 'A') newArchive.push(item);
+        else newQueue.push(item);
+      }
+    });
+
+    active = newActive;
+    finishedSet = newFinished;
+    archive = newArchive;
+    queue = newQueue;
+
+    fillActivePool();
+    saveState();
+    updateUI();
+    toggleArea('exportArea');
+  }
+
+  init();
+</script>
+</body>
+</html>
