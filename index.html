@@ -2,185 +2,438 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Voci Trainer</title>
   <style>
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { margin: 0; padding: 16px; background: #f2f2f7; color: #1c1c1e; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-    .container { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 12px; }
-    
-    .mode-switch { display: grid; grid-template-columns: 1fr 1fr; background: #e5e5ea; border-radius: 12px; padding: 3px; gap: 3px; }
-    .mode-btn { border: none; background: transparent; padding: 10px 6px; font-size: 13px; font-weight: 600; color: #8e8e93; border-radius: 9px; cursor: pointer; transition: all 0.2s; }
-    .mode-btn.active { background: #fff; color: #007aff; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    .mode-btn.festigen.active { color: #ff9500; }
+    :root {
+      --bg: #F2F2F7;
+      --card-bg: #FFFFFF;
+      --label-primary: #000000;
+      --label-secondary: #8E8E93;
+      --blue: #007AFF;
+      --green: #34C759;
+      --red: #FF3B30;
+      --yellow: #FFCC00;
+      --yellow-text: #895C00;
+      --border: #E5E5EA;
+      --shadow: 0 4px 18px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
 
-    .stats { font-size: 13px; color: #8e8e93; display: flex; justify-content: space-between; padding: 0 4px; }
-    .progress-bar { background: #e5e5ea; border-radius: 8px; height: 8px; overflow: hidden; }
-    .progress-fill { background: #34c759; height: 100%; width: 0%; transition: width 0.3s; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-    .card { background: #fff; border-radius: 16px; padding: 24px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center; }
-    .flashcard { min-height: 230px; display: flex; flex-direction: column; justify-content: center; cursor: pointer; user-select: none; position: relative; }
-    
-    .term { font-size: 26px; font-weight: 700; margin-bottom: 12px; word-break: break-word; line-height: 1.25; }
-    .definition { font-size: 21px; color: #007aff; word-break: break-word; line-height: 1.3; }
-    .hint { font-size: 13px; color: #c7c7cc; margin-top: 16px; }
+    body {
+      background-color: var(--bg);
+      color: var(--label-primary);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 16px;
+      padding-top: calc(env(safe-area-inset-top, 16px) + 8px);
+      padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 8px);
+    }
 
-    /* Badges */
-    .badge { align-self: center; font-size: 12px; font-weight: 800; text-transform: uppercase; padding: 5px 12px; border-radius: 8px; margin-bottom: 12px; letter-spacing: 0.5px; }
-    .badge-rep { background: #ffd60a; color: #000; box-shadow: 0 2px 8px rgba(255, 214, 10, 0.4); }
-    .badge-0 { background: #ffe5e5; color: #ff3b30; }
-    .badge-1 { background: #e5f1ff; color: #007aff; }
+    .app-viewport {
+      width: 100%;
+      max-width: 414px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
 
-    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .btn-main { border: none; border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
-    .btn-main:active { opacity: 0.7; }
-    .btn-wrong { background: #ff3b30; color: #fff; }
-    .btn-right { background: #34c759; color: #fff; }
+    .segmented-control {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: #7676801F;
+      border-radius: 9px;
+      padding: 2px;
+      position: relative;
+    }
 
-    .tools-card { background: #fff; border-radius: 14px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-    .toolbar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .btn-sub { border: none; border-radius: 8px; padding: 10px; font-size: 13px; font-weight: 600; background: #f2f2f7; color: #48484a; cursor: pointer; }
-    .btn-sub:active { background: #e5e5ea; }
+    .segment-btn {
+      border: none;
+      background: transparent;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #3C3C4399;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      outline: none;
+    }
 
-    textarea { width: 100%; height: 160px; border-radius: 10px; border: 1px solid #d1d1d6; padding: 10px; font-size: 13px; font-family: monospace; resize: none; margin-bottom: 8px; }
+    .segment-btn.active {
+      background: #FFFFFF;
+      color: var(--label-primary);
+      font-weight: 600;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.04);
+    }
+
+    .status-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 0 2px;
+    }
+
+    .counter-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--label-secondary);
+      letter-spacing: -0.2px;
+    }
+
+    .counter-item span {
+      font-weight: 600;
+      color: var(--label-primary);
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 6px;
+      background: #E5E5EA;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-indicator {
+      height: 100%;
+      width: 0%;
+      background: var(--green);
+      border-radius: 3px;
+      transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .flashcard {
+      background: var(--card-bg);
+      border-radius: 20px;
+      min-height: 240px;
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      user-select: none;
+      text-align: center;
+      transition: transform 0.12s ease;
+      position: relative;
+    }
+
+    .flashcard:active {
+      transform: scale(0.99);
+    }
+
+    .badge-pill {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+      display: inline-block;
+    }
+
+    .badge-rep {
+      background: #FFF8E1;
+      color: var(--yellow-text);
+      border: 1px solid #FFE082;
+    }
+
+    .badge-new {
+      background: #F2F2F7;
+      color: #636366;
+    }
+
+    .badge-training {
+      background: #E5F1FF;
+      color: var(--blue);
+    }
+
+    .card-term {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      color: var(--label-primary);
+      margin-bottom: 12px;
+      word-break: break-word;
+      line-height: 1.2;
+    }
+
+    .card-def {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--blue);
+      letter-spacing: -0.3px;
+      word-break: break-word;
+      line-height: 1.25;
+      display: none;
+      animation: fadeIn 0.18s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-hint {
+      font-size: 13px;
+      font-weight: 500;
+      color: #C7C7CC;
+      margin-top: 24px;
+    }
+
+    .action-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .btn-action {
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s ease, transform 0.1s ease;
+    }
+
+    .btn-action:active {
+      opacity: 0.75;
+      transform: scale(0.98);
+    }
+
+    .btn-wrong {
+      background: var(--red);
+      color: #FFFFFF;
+    }
+
+    .btn-right {
+      background: var(--green);
+      color: #FFFFFF;
+    }
+
+    .utility-sheet {
+      background: var(--card-bg);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .utility-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-sub {
+      border: none;
+      border-radius: 10px;
+      padding: 11px;
+      font-size: 13px;
+      font-weight: 600;
+      background: #F2F2F7;
+      color: #3C3C43;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .btn-sub:active {
+      background: #E5E5EA;
+    }
+
+    .drawer-content {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+
+    textarea.ios-input {
+      width: 100%;
+      height: 140px;
+      border-radius: 12px;
+      border: 1px solid #D1D1D6;
+      padding: 12px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--label-primary);
+      background: #FAF9FA;
+      resize: none;
+      outline: none;
+    }
+
+    textarea.ios-input:focus {
+      border-color: var(--blue);
+      background: #FFFFFF;
+    }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <div class="mode-switch">
-    <button class="mode-btn active" id="modeFocusBtn" onclick="setMode('focus')">Fokus (4 Neu / 1 Rep)</button>
-    <button class="mode-btn festigen" id="modeReviewBtn" onclick="setMode('review')">Festigen (1 Neu / 4 Rep)</button>
+<div class="app-viewport">
+  <div class="segmented-control">
+    <button class="segment-btn active" id="modeFocus" onclick="switchMode('focus')">Fokus (4 Neu / 1 Rep)</button>
+    <button class="segment-btn" id="modeReview" onclick="switchMode('review')">Festigen (1 Neu / 4 Rep)</button>
   </div>
 
-  <div class="stats">
-    <span id="unlearnedCount">Ungelernt: 0</span>
-    <span id="trainingCount">Training: 0</span>
-    <span id="learnedCount">Gelernt: 0</span>
-  </div>
-  
-  <div class="progress-bar">
-    <div class="progress-fill" id="progressBar"></div>
-  </div>
-
-  <!-- Flashcard -->
-  <div class="card flashcard" id="cardArea" onclick="toggleAnswer()">
-    <div class="badge badge-0" id="cardBadge" style="display: none;">0/2</div>
-    <div class="term" id="termText">Keine Wörter geladen</div>
-    <div class="definition" id="defText" style="display: none;"></div>
-    <div class="hint" id="cardHint">Antippen zum Umdrehen</div>
+  <div class="status-panel">
+    <div class="counter-row">
+      <div class="counter-item">Ungelernt: <span id="countUnlearned">0</span></div>
+      <div class="counter-item">Training: <span id="countTraining">0</span></div>
+      <div class="counter-item">Gelernt: <span id="countLearned">0</span></div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-indicator" id="progressFill"></div>
+    </div>
   </div>
 
-  <div class="btn-row" id="actionButtons" style="display: none;">
-    <button class="btn-main btn-wrong" onclick="answer(false)">Noch nicht</button>
-    <button class="btn-main btn-right" onclick="answer(true)">Gewusst</button>
+  <div class="flashcard" id="mainCard" onclick="handleCardFlip()">
+    <div class="badge-pill badge-new" id="cardBadge">Neu (0/2)</div>
+    <div class="card-term" id="cardTerm">Keine Vokabeln vorhanden</div>
+    <div class="card-def" id="cardDef"></div>
+    <div class="card-hint" id="cardHint">Antippen zum Umdrehen</div>
   </div>
 
-  <div class="tools-card">
-    <div class="toolbar-grid">
-      <button class="btn-sub" onclick="openExportImport()">Export / Import</button>
-      <button class="btn-sub" onclick="toggleArea('setupArea')">+ Voci eingeben</button>
+  <div class="action-group" id="actionPanel" style="visibility: hidden;">
+    <button class="btn-action btn-wrong" onclick="processAnswer(false)">Noch nicht</button>
+    <button class="btn-action btn-right" onclick="processAnswer(true)">Gewusst</button>
+  </div>
+
+  <div class="utility-sheet">
+    <div class="utility-bar">
+      <button class="btn-sub" onclick="toggleDrawer('exportDrawer'); prepareCleanExport();">Export / Import</button>
+      <button class="btn-sub" onclick="toggleDrawer('inputDrawer')">+ Voci eingeben</button>
     </div>
 
-    <div id="exportArea" style="display: none; margin-top: 12px;">
-      <p style="font-size: 11px; color: #8e8e93; margin: 0 0 6px 0;">Text kopieren oder am Handy per Kamera scannen.</p>
-      <textarea id="exportText" placeholder="Exportierte Daten oder Text zum Importieren..."></textarea>
-      <div class="toolbar-grid">
-        <button class="btn-sub" style="background:#34c759; color:#fff;" onclick="importFromText()">Stand laden</button>
-        <button class="btn-sub" onclick="toggleArea('exportArea')">Schliessen</button>
+    <div class="drawer-content" id="exportDrawer">
+      <textarea class="ios-input" id="exportArea" placeholder="Text hier kopieren oder einfügen..."></textarea>
+      <div class="utility-bar">
+        <button class="btn-sub" style="background: var(--blue); color: #fff;" onclick="executeRobustImport()">Stand laden</button>
+        <button class="btn-sub" onclick="toggleDrawer('exportDrawer')">Fertig</button>
       </div>
     </div>
 
-    <div id="setupArea" style="display: none; margin-top: 12px;">
-      <textarea id="vocabInput" placeholder="Format: Begriff = Übersetzung&#10;Oder aus Quizlet per Tab getrennt"></textarea>
-      <button class="btn-sub" style="width: 100%; background:#34c759; color:#fff;" onclick="addVocab()">Hinzufügen</button>
+    <div class="drawer-content" id="inputDrawer">
+      <textarea class="ios-input" id="inputArea" placeholder="Format: Begriff = Übersetzung&#10;Oder direkt aus Quizlet per Tab getrennt"></textarea>
+      <div class="utility-bar">
+        <button class="btn-sub" style="background: var(--green); color: #fff;" onclick="addNewWords()">Hinzufügen</button>
+        <button class="btn-sub" onclick="toggleDrawer('inputDrawer')">Fertig</button>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-  let allWords = [];
+  let vocabulary = [];
   let currentMode = 'focus';
-  let activePool = [];
-  let currentIndex = 0;
-  let showingAnswer = false;
+  let activeBatch = [];
+  let pointer = 0;
+  let isCardRevealed = false;
 
-  function init() {
-    loadLocal();
-    rebuildActivePool();
-    updateUI();
+  const STORAGE_KEY = 'voci_data_v2';
+
+  function initApp() {
+    loadDatabase();
+    recalculateBatch();
+    renderScreen();
   }
 
-  function loadLocal() {
-    const saved = localStorage.getItem('voci_single_data');
-    if (saved) {
-      allWords = JSON.parse(saved);
+  function loadDatabase() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      try {
+        vocabulary = JSON.parse(raw);
+      } catch (e) {
+        vocabulary = [];
+      }
     }
   }
 
-  function saveState() {
-    localStorage.setItem('voci_single_data', JSON.stringify(allWords));
+  function persistDatabase() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(vocabulary));
   }
 
-  function setMode(mode) {
+  function switchMode(mode) {
     currentMode = mode;
-    document.getElementById('modeFocusBtn').className = 'mode-btn' + (mode === 'focus' ? ' active' : '');
-    document.getElementById('modeReviewBtn').className = 'mode-btn festigen' + (mode === 'review' ? ' active' : '');
-    rebuildActivePool();
-    resetCardUI();
-    updateUI();
+    document.getElementById('modeFocus').className = 'segment-btn' + (mode === 'focus' ? ' active' : '');
+    document.getElementById('modeReview').className = 'segment-btn' + (mode === 'review' ? ' active' : '');
+    recalculateBatch();
+    resetCardView();
+    renderScreen();
   }
 
-  function rebuildActivePool() {
-    const unmastered = allWords.filter(w => w.score < 2);
-    const mastered = allWords.filter(w => w.score >= 2);
+  function recalculateBatch() {
+    const unmastered = vocabulary.filter(w => w.score < 2);
+    const mastered = vocabulary.filter(w => w.score >= 2);
 
-    let targetUnmastered = currentMode === 'focus' ? 4 : 1;
-    let targetMastered = currentMode === 'focus' ? 1 : 4;
+    const targetUnmastered = currentMode === 'focus' ? 4 : 1;
+    const targetMastered = currentMode === 'focus' ? 1 : 4;
 
-    const newPool = [];
+    const nextBatch = [];
 
-    // 1. Ungelernte / Trainings-Karten holen
-    for (let i = 0; i < unmastered.length && newPool.length < targetUnmastered; i++) {
-      newPool.push(unmastered[i]);
+    // Priorität 1: Unbeendete Karten einpflegen
+    for (let i = 0; i < unmastered.length && nextBatch.length < targetUnmastered; i++) {
+      nextBatch.push(unmastered[i]);
     }
 
-    // 2. Mit gemeisterten Wiederholungskarten auffüllen
-    for (let i = 0; i < mastered.length && (newPool.length < (targetUnmastered + targetMastered)); i++) {
-      if (!newPool.includes(mastered[i])) {
-        newPool.push(mastered[i]);
+    // Priorität 2: Wiederholungskarten einsteuern
+    for (let i = 0; i < mastered.length && nextBatch.length < (targetUnmastered + targetMastered); i++) {
+      if (!nextBatch.includes(mastered[i])) {
+        nextBatch.push(mastered[i]);
       }
     }
 
-    // 3. Falls noch Plätze frei sind (z. B. am Anfang), mit Rest auffüllen
-    for (let i = 0; i < unmastered.length && newPool.length < 5; i++) {
-      if (!newPool.includes(unmastered[i])) {
-        newPool.push(unmastered[i]);
+    // Priorität 3: Falls noch Platz (z. B. zu Beginn wenig Gelerntes vorhanden)
+    for (let i = 0; i < unmastered.length && nextBatch.length < 5; i++) {
+      if (!nextBatch.includes(unmastered[i])) {
+        nextBatch.push(unmastered[i]);
       }
     }
 
-    activePool = newPool;
-    if (currentIndex >= activePool.length) {
-      currentIndex = 0;
+    activeBatch = nextBatch;
+    if (pointer >= activeBatch.length) {
+      pointer = 0;
     }
   }
 
-  function toggleAnswer() {
-    if (activePool.length === 0) return;
-    showingAnswer = !showingAnswer;
-    document.getElementById('defText').style.display = showingAnswer ? 'block' : 'none';
-    document.getElementById('cardHint').textContent = showingAnswer ? 'Ergebnis:' : 'Antippen zum Umdrehen';
-    document.getElementById('actionButtons').style.display = showingAnswer ? 'grid' : 'none';
+  function handleCardFlip() {
+    if (activeBatch.length === 0) return;
+    isCardRevealed = !isCardRevealed;
+    
+    document.getElementById('cardDef').style.display = isCardRevealed ? 'block' : 'none';
+    document.getElementById('cardHint').textContent = isCardRevealed ? 'Bewerte dein Wissen:' : 'Antippen zum Umdrehen';
+    document.getElementById('actionPanel').style.visibility = isCardRevealed ? 'visible' : 'hidden';
   }
 
-  function answer(correct) {
-    if (activePool.length === 0) return;
-    const card = activePool[currentIndex];
-    const wasMastered = card.score >= 2;
+  function processAnswer(known) {
+    if (activeBatch.length === 0) return;
+    const card = activeBatch[pointer];
+    const isRepetition = card.score >= 2;
 
-    if (correct) {
-      if (wasMastered) {
-        card.score = 2; // Bleibt gemeistert
+    if (known) {
+      if (isRepetition) {
+        card.score = 2; // Bestätigt, bleibt gemeistert
       } else {
         card.score = (card.score || 0) + 1;
       }
@@ -188,160 +441,176 @@
       card.score = 0; // Fällt bei Fehler sofort auf 0
     }
 
-    rebuildActivePool();
+    persistDatabase();
+    recalculateBatch();
 
-    if (activePool.length > 0) {
-      currentIndex = (currentIndex + 1) % activePool.length;
+    if (activeBatch.length > 0) {
+      pointer = (pointer + 1) % activeBatch.length;
     } else {
-      currentIndex = 0;
+      pointer = 0;
     }
 
-    resetCardUI();
-    saveState();
-    updateUI();
+    resetCardView();
+    renderScreen();
   }
 
-  function resetCardUI() {
-    showingAnswer = false;
-    document.getElementById('defText').style.display = 'none';
-    document.getElementById('actionButtons').style.display = 'none';
+  function resetCardView() {
+    isCardRevealed = false;
+    document.getElementById('cardDef').style.display = 'none';
+    document.getElementById('actionPanel').style.visibility = 'hidden';
     document.getElementById('cardHint').textContent = 'Antippen zum Umdrehen';
   }
 
-  function updateUI() {
-    const unlearned = allWords.filter(w => w.score === 0).length;
-    const training = allWords.filter(w => w.score === 1).length;
-    const learned = allWords.filter(w => w.score >= 2).length;
-    const total = allWords.length;
+  function renderScreen() {
+    const unlearned = vocabulary.filter(w => w.score === 0).length;
+    const training = vocabulary.filter(w => w.score === 1).length;
+    const learned = vocabulary.filter(w => w.score >= 2).length;
+    const total = vocabulary.length;
 
-    document.getElementById('unlearnedCount').textContent = `Ungelernt: ${unlearned}`;
-    document.getElementById('trainingCount').textContent = `Training: ${training}`;
-    document.getElementById('learnedCount').textContent = `Gelernt: ${learned}`;
+    document.getElementById('countUnlearned').textContent = unlearned;
+    document.getElementById('countTraining').textContent = training;
+    document.getElementById('countLearned').textContent = learned;
 
-    const progress = total === 0 ? 0 : Math.round((learned / total) * 100);
-    document.getElementById('progressBar').style.width = `${progress}%`;
+    const percentage = total === 0 ? 0 : Math.round((learned / total) * 100);
+    document.getElementById('progressFill').style.width = percentage + '%';
 
     const badge = document.getElementById('cardBadge');
-    if (activePool.length > 0) {
-      currentIndex = currentIndex % activePool.length;
-      const card = activePool[currentIndex];
+    const termEl = document.getElementById('cardTerm');
+    const defEl = document.getElementById('cardDef');
 
-      document.getElementById('termText').textContent = card.t;
-      document.getElementById('defText').textContent = card.d;
+    if (activeBatch.length > 0) {
+      pointer = pointer % activeBatch.length;
+      const card = activeBatch[pointer];
+
+      termEl.textContent = card.term;
+      defEl.textContent = card.definition;
 
       badge.style.display = 'inline-block';
       if (card.score >= 2) {
-        // Auffälliges gelbes REP-Badge
-        badge.className = 'badge badge-rep';
-        badge.textContent = 'REP (1x nötig)';
+        badge.className = 'badge-pill badge-rep';
+        badge.textContent = '🔁 Repetition';
       } else if (card.score === 1) {
-        badge.className = 'badge badge-1';
-        badge.textContent = 'Training (1/2)';
+        badge.className = 'badge-pill badge-training';
+        badge.textContent = 'Im Training (1/2)';
       } else {
-        badge.className = 'badge badge-0';
-        badge.textContent = 'Neu / Fehler (0/2)';
+        badge.className = 'badge-pill badge-new';
+        badge.textContent = 'Neu (0/2)';
       }
     } else {
       badge.style.display = 'none';
-      document.getElementById('termText').textContent = total > 0 ? 'Alle Wörter komplett gelernt!' : 'Keine Wörter geladen';
-      document.getElementById('defText').textContent = '';
-      document.getElementById('cardHint').textContent = '';
-      document.getElementById('actionButtons').style.display = 'none';
+      termEl.textContent = total > 0 ? 'Alles gemeistert!' : 'Keine Vokabeln geladen';
+      defEl.textContent = '';
+      document.getElementById('cardHint').textContent = total > 0 ? 'Klicke auf Festigen oder füge neue Voci hinzu.' : 'Unten neue Voci einfügen.';
     }
   }
 
-  function toggleArea(id) {
+  function toggleDrawer(id) {
     const el = document.getElementById(id);
-    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    const isOpen = el.style.display === 'flex';
+    document.getElementById('exportDrawer').style.display = 'none';
+    document.getElementById('inputDrawer').style.display = 'none';
+    el.style.display = isOpen ? 'none' : 'flex';
   }
 
-  function openExportImport() {
-    generateExportText();
-    document.getElementById('exportArea').style.display = 'block';
-  }
-
-  function addVocab() {
-    const text = document.getElementById('vocabInput').value;
-    const lines = text.split('\n');
-    let added = 0;
+  function addNewWords() {
+    const raw = document.getElementById('inputArea').value;
+    const lines = raw.split('\n');
+    let count = 0;
 
     lines.forEach(line => {
       let sep = line.includes('\t') ? '\t' : '=';
       const parts = line.split(sep);
-      if (parts.length >= 2 && parts[0].trim() && parts[1].trim()) {
-        allWords.push({
-          id: Date.now() + Math.random(),
-          t: parts[0].trim(),
-          d: parts[1].trim(),
-          score: 0
-        });
-        added++;
+      if (parts.length >= 2) {
+        const t = cleanWord(parts[0]);
+        const d = cleanWord(parts.slice(1).join(sep));
+        if (t && d) {
+          vocabulary.push({
+            id: Date.now() + Math.random(),
+            term: t,
+            definition: d,
+            score: 0
+          });
+          count++;
+        }
       }
     });
 
-    if (added > 0) {
-      rebuildActivePool();
-      saveState();
-      document.getElementById('vocabInput').value = '';
-      toggleArea('setupArea');
-      updateUI();
+    if (count > 0) {
+      persistDatabase();
+      recalculateBatch();
+      document.getElementById('inputArea').value = '';
+      toggleDrawer('inputDrawer');
+      renderScreen();
     }
   }
 
-  function generateExportText() {
-    const unlearned = allWords.filter(w => w.score === 0);
-    const training = allWords.filter(w => w.score === 1);
-    const learned = allWords.filter(w => w.score >= 2);
-
-    let out = `=== TRAINING (1/2) ===\n`;
-    training.forEach(i => { out += `${i.t} = ${i.d}\n`; });
-
-    out += `\n=== GELERNT (2/2) ===\n`;
-    learned.forEach(i => { out += `${i.t} = ${i.d}\n`; });
-
-    out += `\n=== UNGELERNT (0/2) ===\n`;
-    unlearned.forEach(i => { out += `${i.t} = ${i.d}\n`; });
-
-    document.getElementById('exportText').value = out;
+  function cleanWord(str) {
+    if (!str) return '';
+    return str
+      .replace(/\[Score:\s*\d+\]/gi, '')
+      .replace(/\[Punkte:\s*.*?\]/gi, '')
+      .replace(/\(Score:\s*\d+\)/gi, '')
+      .trim();
   }
 
-  function importFromText() {
-    const raw = document.getElementById('exportText').value;
+  function prepareCleanExport() {
+    const training = vocabulary.filter(w => w.score === 1);
+    const learned = vocabulary.filter(w => w.score >= 2);
+    const unlearned = vocabulary.filter(w => w.score === 0);
+
+    let doc = `=== GELERNT (2/2) ===\n`;
+    learned.forEach(w => { doc += `${w.term} = ${w.definition}\n`; });
+
+    doc += `\n=== TRAINING (1/2) ===\n`;
+    training.forEach(w => { doc += `${w.term} = ${w.definition}\n`; });
+
+    doc += `\n=== UNGELERNT (0/2) ===\n`;
+    unlearned.forEach(w => { doc += `${w.term} = ${w.definition}\n`; });
+
+    document.getElementById('exportArea').value = doc;
+  }
+
+  function executeRobustImport() {
+    const raw = document.getElementById('exportArea').value;
     const lines = raw.split('\n');
 
-    let currentScore = 0;
-    const imported = [];
+    let sectionScore = 0;
+    const sanitizedList = [];
 
     lines.forEach(line => {
       const trimmed = line.trim();
       if (!trimmed) return;
 
-      if (trimmed.includes('=== TRAINING (1/2) ===')) { currentScore = 1; return; }
-      if (trimmed.includes('=== GELERNT (2/2) ===')) { currentScore = 2; return; }
-      if (trimmed.includes('=== UNGELERNT (0/2) ===')) { currentScore = 0; return; }
+      if (trimmed.includes('=== GELERNT')) { sectionScore = 2; return; }
+      if (trimmed.includes('=== TRAINING') || trimmed.includes('=== NOCH AM LERNEN')) { sectionScore = 1; return; }
+      if (trimmed.includes('=== UNGELERNT') || trimmed.includes('=== NICHT ANGESCHAUT')) { sectionScore = 0; return; }
 
       let sep = trimmed.includes('\t') ? '\t' : '=';
       const parts = trimmed.split(sep);
-      if (parts.length >= 2 && parts[0].trim() && parts[1].trim()) {
-        imported.push({
-          id: Date.now() + Math.random(),
-          t: parts[0].trim(),
-          d: parts[1].trim(),
-          score: currentScore
-        });
+      if (parts.length >= 2) {
+        const t = cleanWord(parts[0]);
+        const d = cleanWord(parts.slice(1).join(sep));
+        if (t && d) {
+          sanitizedList.push({
+            id: Date.now() + Math.random(),
+            term: t,
+            definition: d,
+            score: sectionScore
+          });
+        }
       }
     });
 
-    if (imported.length > 0) {
-      allWords = imported;
-      rebuildActivePool();
-      saveState();
-      updateUI();
-      toggleArea('exportArea');
+    if (sanitizedList.length > 0) {
+      vocabulary = sanitizedList;
+      persistDatabase();
+      recalculateBatch();
+      renderScreen();
+      toggleDrawer('exportDrawer');
     }
   }
 
-  init();
+  initApp();
 </script>
 </body>
 </html>
